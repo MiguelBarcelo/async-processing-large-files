@@ -2,10 +2,15 @@ package com.miguel_barcelo.async_processing_large_files.runner;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
@@ -44,6 +49,9 @@ public class ProcessingMultipleFilesRunner implements CommandLineRunner {
 	}
 	
 	private void processFile(String filePath) {
+		ExecutorService executor = Executors.newFixedThreadPool(AppConstants.DOMAINS.length);
+		Map<String, Future<Integer>> domainTasks = new HashMap<>();
+		
 		StringBuilder log = new StringBuilder();
 		log.append("📄 Processing file: ").append(filePath).append("\n");
 		
@@ -51,16 +59,41 @@ public class ProcessingMultipleFilesRunner implements CommandLineRunner {
 			long start = System.currentTimeMillis();
 			
 			for (String domain: AppConstants.DOMAINS) {
-				int total = service.countEmails(filePath, domain);
-				log.append(String.format("📬 %s: %d\n", domain, total));
+				domainTasks.put(domain, executor.submit(() -> service.countEmails(filePath, domain)));
+			}
+			
+			for (String domain: AppConstants.DOMAINS) {
+				int total = getEmailCount(domainTasks.get(domain), domain, log);
+				if (total >= 0) {
+					log.append(String.format("📬 %s: %d\n", domain, total));
+				}
 			}
 			
 			long duration = System.currentTimeMillis() - start;
 			log.append(String.format("⏱️ Time: %d ms\n\n", duration));
-		} catch (Exception e) {
-			log.append("❌ Error: ").append(e.getMessage()).append("\n");
+		} finally {
+			executor.shutdown();
+			try {
+				executor.awaitTermination(10, TimeUnit.SECONDS);				
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				log.append(String.format("⚠️ Termination interrupted: %s", e.getMessage()));
+			}
 		}
 		
 		System.out.print(log.toString());
+	}
+	
+	private int getEmailCount(Future<Integer> future, String domain, StringBuilder log) {
+		try {
+			return future.get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			log.append(String.format("❌ Interrupted while counting %s: %s\n", domain, e.getMessage()));
+		} catch (ExecutionException e) {
+			log.append(String.format("❌ Error while counting %s: %s\n", domain, e.getCause().getMessage()));
+		}
+		
+		return -1;
 	}
 }
