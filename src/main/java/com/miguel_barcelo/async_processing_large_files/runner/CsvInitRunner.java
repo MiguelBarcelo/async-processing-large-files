@@ -1,6 +1,7 @@
 package com.miguel_barcelo.async_processing_large_files.runner;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +10,7 @@ import com.miguel_barcelo.async_processing_large_files.util.LargeCsvGenerator;
 
 @Component
 @Order(1)
+@ConditionalOnProperty(name = "batch.runner.enabled", havingValue = "true")
 public class CsvInitRunner implements CommandLineRunner {
 
 	@Override

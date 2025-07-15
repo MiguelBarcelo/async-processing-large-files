@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import com.miguel_barcelo.async_processing_large_files.util.AppConstants;
 
 @Component
 @Order(10)
+@ConditionalOnProperty(name = "batch.runner.enabled", havingValue = "true")
 public class EmailCounterRunner implements CommandLineRunner {
 
 	private final EmailCounterService service;

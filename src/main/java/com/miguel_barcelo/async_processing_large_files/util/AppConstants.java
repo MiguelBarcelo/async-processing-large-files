@@ -9,6 +9,8 @@ public class AppConstants {
 	
 	public static final String[] DOMAINS = { "gmail.com", "yahoo.com", "hotmail.com" };
 	
+	public static final String[] FILES = { "users.csv", "users2.csv", "users3.csv" };
+	
 	private static Random random = new Random();
 	
 	// Avoid instantiation
