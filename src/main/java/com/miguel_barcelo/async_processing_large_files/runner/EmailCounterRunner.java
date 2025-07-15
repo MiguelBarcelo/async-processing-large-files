@@ -5,6 +5,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.miguel_barcelo.async_processing_large_files.service.EmailCounterService;
+import com.miguel_barcelo.async_processing_large_files.util.AppConstants;
 
 @Component
 @Order(10)
@@ -18,7 +19,7 @@ public class EmailCounterRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		String filePath = System.getProperty("user.dir") + "/users.csv";
+		String filePath = AppConstants.USERS_FILE_PATH;
 		long start = System.currentTimeMillis();
 		int total = service.countGmailEmails(filePath);
 		long duration = System.currentTimeMillis() - start;
