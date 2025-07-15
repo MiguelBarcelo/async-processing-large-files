@@ -1,5 +1,12 @@
 package com.miguel_barcelo.async_processing_large_files.runner;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -19,12 +26,31 @@ public class EmailCounterRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		String filePath = AppConstants.USERS_FILE_PATH;
-		long start = System.currentTimeMillis();
-		int total = service.countGmailEmails(filePath);
-		long duration = System.currentTimeMillis() - start;
 		
-		System.out.printf("📬 Total number of @gmail.com emails: %d\n", total);
-		System.out.printf("⏱️ Total time: %d ms\n", duration);
+		ExecutorService executor = Executors.newFixedThreadPool(AppConstants.DOMAINS.length);
+		Map<String, Future<Integer>> results = new HashMap<>();
+		String filePath = AppConstants.USERS_FILE_PATH;
+		
+		long start = System.currentTimeMillis();
+		
+		for (String domain : AppConstants.DOMAINS) {
+			Future<Integer> future = executor.submit(() -> service.countEmails(filePath, domain));
+			results.put(domain, future);
+		}
+		
+		executor.shutdown();
+		
+		for (Map.Entry<String, Future<Integer>> entry : results.entrySet()) {
+			try {
+				String domain = entry.getKey();
+				int count = entry.getValue().get(); // Wait for every result
+				System.out.printf("📬 %s: %d\n", domain, count);
+			} catch (ExecutionException e) {
+				System.out.printf("❌ Error processing %s: %s\n", entry.getKey(), e.getCause());
+			}
+		}
+		
+		long duration = System.currentTimeMillis() - start;
+		System.out.printf("⏱️ Total overall time: %d ms\n", duration);
 	}
 }

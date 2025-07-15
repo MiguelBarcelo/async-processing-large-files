@@ -19,7 +19,7 @@ public class EmailCounterService {
 	private static final int BLOCK_SIZE = 10_000;
 	private static final int THREADS = Runtime.getRuntime().availableProcessors();
 	
-	public int countGmailEmails(String filePath) throws IOException, InterruptedException {
+	public int countEmails(String filePath, String domain) throws IOException, InterruptedException {
 		ExecutorService executor = Executors.newFixedThreadPool(THREADS);
 		List<Callable<Integer>> tasks = new ArrayList<>();
 		
@@ -38,19 +38,19 @@ public class EmailCounterService {
 				
 				if (block.size() == BLOCK_SIZE) {
 					List<String> batch = new ArrayList<>(block);
-					tasks.add(() -> countGmailInBlock(batch));
+					tasks.add(() -> countInBlock(batch, domain));
 					block.clear();
 				}
 			}
 			
 			if (!block.isEmpty()) {
 				List<String> batch = new ArrayList<>(block);
-				tasks.add(() -> countGmailInBlock(batch) );
+				tasks.add(() -> countInBlock(batch, domain) );
 			}
 		}
 		
-		System.out.println("🧩 Total number of tasks created: " + tasks.size());
-		System.out.println("🧵 Maximum number of allowed threads: " + THREADS);
+		//System.out.println("🧩 Total number of tasks created: " + tasks.size());
+		//System.out.println("🧵 Maximum number of allowed threads: " + THREADS);
 		
 		// Executing in parallel
 		List<Future<Integer>> futures = executor.invokeAll(tasks);
@@ -69,13 +69,13 @@ public class EmailCounterService {
 		return total;
 	}
 	
-	private int countGmailInBlock(List<String> block) {
-		System.out.printf("🔧 thread: %s, block size: %d\n", Thread.currentThread().getName(), block.size());
+	private int countInBlock(List<String> block, String domain) {
+		//System.out.printf("🔧 thread: %s, block size: %d\n", Thread.currentThread().getName(), block.size());
 		
 		int count = 0;
 		for (String line : block) {
 			String[] parts = line.split(",");
-			if (parts.length >= 3 && parts[2].endsWith("@gmail.com")) {
+			if (parts.length >= 3 && parts[2].endsWith(domain)) {
 				count++;
 			}
 		}
